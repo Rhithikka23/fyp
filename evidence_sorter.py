@@ -99,14 +99,15 @@ def get_file_size(filepath):
 
 def get_file_metadata(filepath, extension):
     """
-    Extract basic metadata from file based on type.
-    Returns a dictionary with metadata information.
+    Extract detailed metadata from file based on type.
+    Returns a dictionary with metadata information and content details.
     """
     metadata = {
         "size": get_file_size(filepath),
         "created": None,
         "modified": None,
-        "details": ""
+        "details": "",
+        "contents": []  # Store detailed content information
     }
     
     try:
@@ -116,46 +117,128 @@ def get_file_metadata(filepath, extension):
     except:
         pass
     
-    # Extract type-specific metadata
+    # Extract type-specific metadata and contents
     if extension == ".pcap" or extension == ".pcapng":
         metadata["details"] = "Network packet capture file"
+        metadata["contents"].append("File type: Network packet capture (PCAP)")
         try:
             with open(filepath, "rb") as f:
                 header = f.read(4)
                 if header == b'\xa1\xb2\xc3\xd4':
                     metadata["details"] += " (standard format)"
+                    metadata["contents"].append("Format: Standard PCAP (32-bit timestamps)")
                 elif header == b'\xa1\xb2\xcd\x34':
                     metadata["details"] += " (nanosecond precision)"
+                    metadata["contents"].append("Format: PCAP-NG (nanosecond precision)")
+                else:
+                    metadata["contents"].append("Format: Unknown or custom format")
+                
+                # Try to count packets by file size heuristic
+                file_size = get_file_size(filepath)
+                estimated_packets = max(1, file_size // 100)  # Rough estimate
+                metadata["contents"].append(f"Estimated packets: ~{estimated_packets:,}")
         except:
-            pass
+            metadata["contents"].append("Format: Unable to determine")
     
     elif extension == ".zip":
         metadata["details"] = "ZIP archive file"
+        metadata["contents"].append("File type: ZIP archive")
         try:
             import zipfile
             with zipfile.ZipFile(filepath, 'r') as z:
-                file_count = len(z.namelist())
+                file_list = z.namelist()
+                file_count = len(file_list)
                 metadata["details"] += f" (contains {file_count} items)"
-        except:
+                metadata["contents"].append(f"Items in archive: {file_count}")
+                
+                # List first 5 items
+                for i, item in enumerate(file_list[:5]):
+                    metadata["contents"].append(f"  • {item}")
+                
+                if file_count > 5:
+                    metadata["contents"].append(f"  ... and {file_count - 5} more items")
+                
+                # Calculate total uncompressed size
+                total_uncompressed = sum(z.getinfo(name).file_size for name in file_list)
+                metadata["contents"].append(f"Total uncompressed size: {total_uncompressed:,} bytes")
+        except Exception as e:
             metadata["details"] += " (corrupted or unreadable)"
+            metadata["contents"].append("Status: Archive appears to be corrupted")
     
-    elif extension in [".jpg", ".jpeg", ".png", ".gif"]:
+    elif extension in [".jpg", ".jpeg", ".png", ".gif", ".bmp"]:
         metadata["details"] = "Image file"
+        metadata["contents"].append("File type: Image")
         try:
             with open(filepath, "rb") as f:
                 header = f.read(4)
                 if extension == ".png" and header[:4] == b'\x89PNG':
                     metadata["details"] += " (PNG format)"
+                    metadata["contents"].append("Format: PNG (Portable Network Graphics)")
+                    metadata["contents"].append("Compression: Lossless")
                 elif extension in [".jpg", ".jpeg"] and header[:2] == b'\xff\xd8':
                     metadata["details"] += " (JPEG format)"
+                    metadata["contents"].append("Format: JPEG (Joint Photographic Experts Group)")
+                    metadata["contents"].append("Compression: Lossy")
+                elif extension == ".gif":
+                    metadata["contents"].append("Format: GIF (Graphics Interchange Format)")
+                    metadata["contents"].append("Compression: Lossless")
+                else:
+                    metadata["contents"].append(f"Format: {extension.upper()}")
+                
+                # Add file size in human readable format
+                size_mb = metadata["size"] / (1024 * 1024)
+                metadata["contents"].append(f"Image size: {size_mb:.2f} MB")
         except:
-            pass
+            metadata["contents"].append("Format: Unable to determine")
     
     elif extension == ".pdf":
         metadata["details"] = "PDF document"
+        metadata["contents"].append("File type: PDF (Portable Document Format)")
+        try:
+            with open(filepath, "rb") as f:
+                content = f.read(1000)  # Read first 1000 bytes
+                if b"Creator" in content or b"Producer" in content:
+                    metadata["contents"].append("Status: Valid PDF structure detected")
+                
+                # Try to find title or metadata
+                if b"/Title" in content:
+                    metadata["contents"].append("Contains embedded metadata (Title field)")
+                
+                metadata["contents"].append(f"Document size: {metadata['size'] / 1024:.2f} KB")
+        except:
+            metadata["contents"].append("Status: Unable to read PDF metadata")
     
     elif extension == ".txt":
         metadata["details"] = "Text file"
+        metadata["contents"].append("File type: Plain text")
+        try:
+            with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+                lines = content.split('\n')
+                metadata["contents"].append(f"Total lines: {len(lines)}")
+                metadata["contents"].append(f"Total characters: {len(content)}")
+                
+                # Show first 3 lines of content
+                metadata["contents"].append("Content preview:")
+                for i, line in enumerate(lines[:3]):
+                    if line.strip():
+                        preview = line[:70] + "..." if len(line) > 70 else line
+                        metadata["contents"].append(f"  Line {i+1}: {preview}")
+                
+                if len(lines) > 3:
+                    metadata["contents"].append(f"  ... ({len(lines) - 3} more lines)")
+        except:
+            metadata["contents"].append("Status: Unable to read text content")
+    
+    elif extension in [".doc", ".docx"]:
+        metadata["details"] = "Word document"
+        metadata["contents"].append(f"File type: Microsoft Word document ({extension})")
+        metadata["contents"].append(f"Document size: {metadata['size'] / 1024:.2f} KB")
+    
+    elif extension in [".rar", ".7z", ".tar", ".gz"]:
+        metadata["details"] = "Archive file"
+        metadata["contents"].append(f"File type: {extension.upper()} archive")
+        metadata["contents"].append(f"Archive size: {metadata['size'] / (1024*1024):.2f} MB")
     
     return metadata
 
@@ -233,10 +316,16 @@ def process_evidence_files():
             
             processed_files.append(file_info)
             
-            # Print progress
+            # Print progress with detailed content information
             suspicious_flag = " [SUSPICIOUS]" if suspicious else ""
-            print(f"• {filename}")
-            print(f"  Type: {category} | Size: {metadata['size']} bytes{suspicious_flag}")
+            print(f"\n• {filename}")
+            print(f"  Type: {category} | Size: {metadata['size']:,} bytes{suspicious_flag}")
+            
+            # Print detailed contents
+            if metadata['contents']:
+                print(f"  Contents:")
+                for content_line in metadata['contents']:
+                    print(f"    {content_line}")
     
     return processed_files
 
@@ -299,16 +388,22 @@ def generate_report(processed_files):
         report_lines.append(f"  Original path: {file_info['relative_path']}")
         report_lines.append(f"  Category: {file_info['category']}")
         report_lines.append(f"  Extension: {file_info['extension']}")
-        report_lines.append(f"  Size: {file_info['metadata']['size']} bytes")
+        report_lines.append(f"  Size: {file_info['metadata']['size']:,} bytes")
         
         if file_info['metadata']['modified']:
             report_lines.append(f"  Modified: {file_info['metadata']['modified']}")
         
         if file_info['metadata']['details']:
-            report_lines.append(f"  Details: {file_info['metadata']['details']}")
+            report_lines.append(f"  Type Details: {file_info['metadata']['details']}")
+        
+        # Add detailed contents
+        if file_info['metadata']['contents']:
+            report_lines.append(f"  Contents Information:")
+            for content_line in file_info['metadata']['contents']:
+                report_lines.append(f"    {content_line}")
         
         if file_info['suspicious']:
-            report_lines.append(f"  ⚠ WARNING: Suspicious file detected!")
+            report_lines.append(f"  WARNING: Suspicious file detected!")
         
         report_lines.append(f"  Status: {file_info['status']}")
     
@@ -347,13 +442,9 @@ def generate_report(processed_files):
 
 if __name__ == "__main__":
     print("\n")
-    print("██████╗ ██╗ ██████╗ ██╗████████╗ █████╗ ██╗         ")
-    print("██╔══██╗██║██╔════╝ ██║╚══██╔══╝██╔══██╗██║         ")
-    print("██║  ██║██║██║  ███╗██║   ██║   ███████║██║         ")
-    print("██║  ██║██║██║   ██║██║   ██║   ██╔══██║██║         ")
-    print("██████╔╝██║╚██████╔╝██║   ██║   ██║  ██║███████╗   ")
-    print("╚═════╝ ╚═╝ ╚═════╝ ╚═╝   ╚═╝   ╚═╝  ╚═╝╚══════╝   ")
-    print("              Evidence Sorter v1.0")
+    print("DIGITAL FORENSICS EVIDENCE SORTER")
+    print("=" * 50)
+    print("A beginner-friendly evidence analysis tool")
     print("")
     
     # Process evidence files
