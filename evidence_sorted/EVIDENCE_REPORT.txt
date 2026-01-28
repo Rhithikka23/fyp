@@ -1,0 +1,111 @@
+======================================================================
+DIGITAL FORENSICS EVIDENCE ANALYSIS REPORT
+======================================================================
+Generated: 2026-01-28 12:08:37
+Evidence Source: evidence
+Output Location: evidence_sorted
+
+SUMMARY
+----------------------------------------------------------------------
+Total files processed: 8
+  • archives: 1 file(s) - Archive/compressed files
+  • documents: 3 file(s) - Document files (text, PDF)
+  • images: 3 file(s) - Image files (pictures, screenshots)
+  • network_captures: 1 file(s) - Network capture files (packet analysis)
+
+Suspicious files flagged: 2
+
+SUSPICIOUS FILES DETECTED
+----------------------------------------------------------------------
+• confidential.txt
+  Category: documents
+  Size: 138 bytes
+  Modified: 2026-01-14 14:19:39
+• smb attack.pcap
+  Category: network_captures
+  Size: 23030525 bytes
+  Modified: 2026-01-28 12:00:15
+
+DETAILED FILE LISTING
+----------------------------------------------------------------------
+
+File: 1157AB5.zip
+  Original path: 1157AB5.zip
+  Category: archives
+  Extension: .zip
+  Size: 12478 bytes
+  Modified: 2026-01-28 12:00:15
+  Details: ZIP archive file (contains 1 items)
+  Status: COPIED
+
+File: blake danger information.png
+  Original path: blake danger information.png
+  Category: images
+  Extension: .png
+  Size: 2448897 bytes
+  Modified: 2026-01-14 14:20:51
+  Details: Image file (PNG format)
+  Status: COPIED
+
+File: Blake_Danger_Documents.pdf
+  Original path: Blake_Danger_Documents.pdf
+  Category: documents
+  Extension: .pdf
+  Size: 4793 bytes
+  Modified: 2026-01-14 14:21:11
+  Details: PDF document
+  Status: COPIED
+
+File: confidential.txt
+  Original path: confidential.txt
+  Category: documents
+  Extension: .txt
+  Size: 138 bytes
+  Modified: 2026-01-14 14:19:39
+  Details: Text file
+  ⚠ WARNING: Suspicious file detected!
+  Status: COPIED
+
+File: rental blake danger.png
+  Original path: rental blake danger.png
+  Category: images
+  Extension: .png
+  Size: 2228685 bytes
+  Modified: 2026-01-14 14:21:27
+  Details: Image file (PNG format)
+  Status: COPIED
+
+File: Screenshot 2026-01-21 004222.png
+  Original path: Screenshot 2026-01-21 004222.png
+  Category: images
+  Extension: .png
+  Size: 44653 bytes
+  Modified: 2026-01-21 00:42:22
+  Details: Image file (PNG format)
+  Status: COPIED
+
+File: smb attack.pcap
+  Original path: smb attack.pcap
+  Category: network_captures
+  Extension: .pcap
+  Size: 23030525 bytes
+  Modified: 2026-01-28 12:00:15
+  Details: Network packet capture file
+  ⚠ WARNING: Suspicious file detected!
+  Status: COPIED
+
+File: Victim number.pdf
+  Original path: Victim number.pdf
+  Category: documents
+  Extension: .pdf
+  Size: 17030 bytes
+  Modified: 2026-01-28 12:00:15
+  Details: PDF document
+  Status: COPIED
+
+======================================================================
+CONCLUSION
+----------------------------------------------------------------------
+All 8 evidence file(s) have been processed and
+organized into categorized folders within 'evidence_sorted'.
+⚠ 2 suspicious file(s) have been flagged for review.

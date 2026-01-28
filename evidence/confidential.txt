@@ -1,0 +1,4 @@
+NRIC: S8765432B
+Credit Card Number: 5123 4567 8901 2345
+Address: 123 Clementi Ave 3, #12-34, Singapore 129987
+Phone number: 9123 4567
